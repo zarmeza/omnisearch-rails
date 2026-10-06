@@ -8,10 +8,23 @@ abort("The Rails environment is running in production mode!") if Rails.env.produ
 require 'rspec/rails'
 # Add additional requires below this line. Rails is not loaded until this point!
 
+# Specs run against a real in-memory cache store rather than the Solid Cache
+# database. The cache is an implementation detail of the search path; the specs
+# that care about it (spec/services/search_cache_spec.rb) test SearchCache
+# directly, including what happens when the store raises.
+#
+# The one thing that must not leak between examples is cached search results,
+# so the store is cleared before each.
 RSpec.configure do |config|
+  # Cached search results must not leak between examples. This has to tolerate an
+  # unprepared cache database: a fresh clone that has not run
+  # `RAILS_ENV=test bundle exec ruby bin/prepare-cache` should still be able to
+  # run the unit suite. The specs that need the real store are the ones that
+  # assert on it (search_cache_solid_integration_spec.rb), and they skip.
   config.before(:each) do
-    mock_redis = MockRedis.new
-    allow(Redis).to receive(:new).and_return(mock_redis)
+    Rails.cache.clear
+  rescue ActiveRecord::StatementInvalid, ActiveRecord::NoDatabaseError
+    nil
   end
 end
 
@@ -32,7 +45,9 @@ Dir[Rails.root.join('spec', 'support', '**', '*.rb')].sort.each { |f| require f 
 
 RSpec.configure do |config|
   # You can uncomment this line to turn off ActiveRecord support entirely.
-  config.use_active_record = false
+  # Active Record is on: the app declares a `cache` database for Solid Cache, and
+  # Rails needs the connection available even though nothing writes to primary.
+  config.use_active_record = true
 
   # RSpec Rails can automatically mix in different behaviours to your tests
   # based on their file location, for example enabling you to call `get` and

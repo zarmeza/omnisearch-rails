@@ -145,8 +145,16 @@ cp .env.sample .env      # then fill in whichever providers you have keys for
 bundle exec rails s
 ```
 
-That is the whole setup. **No database and no Redis are required** to run the app
-or the test suite — see [Caching](#caching-optional) below.
+Then prepare the cache database (see [Caching](#caching-solid-cache) below):
+
+```
+bundle exec ruby bin/prepare-cache
+bundle exec rails s
+```
+
+That is the whole setup. **No external service is required** — no Redis, no
+database server, nothing to install beyond the gems. The cache is a SQLite file
+the app creates for itself.
 
 ### Environment variables
 
@@ -155,28 +163,32 @@ or the test suite — see [Caching](#caching-optional) below.
 | `GOOGLE_ENGINE_ID` | for Google | Custom Search engine id |
 | `GOOGLE_API_KEY` | for Google | Custom Search API key |
 | `BING_SUBSCRIPTION_KEY` | reserved | Not yet used; the Bing integration scrapes `bing.com` and needs no key |
-| `REDIS_URL` | no | Cache location. Defaults to `localhost:6379` |
 
 Both search providers are optional. A search runs against whichever are
 configured, and the response reports the status of each provider individually.
 
-### Caching (optional)
+### Caching (Solid Cache)
 
-Provider responses are cached for 15 minutes to stay inside API quotas. If no
-Redis is reachable the app **runs uncached rather than failing** — a cache
-outage logs a warning and degrades performance, never availability.
+Provider responses are cached for 15 minutes to stay inside API quotas, using
+[Solid Cache](https://github.com/rails/solid_cache) — the Rails 8 default. It
+stores entries in the app's own database, so there is no Redis to install or
+operate.
 
-To enable caching, point `REDIS_URL` at any Redis:
+The cache lives in its own SQLite file (`db/cache_development.sqlite3`), separate
+from the primary database. That is deliberate: the cache is disposable, so
+deleting it should cost one cold search and nothing else. A corrupt or oversized
+cache can never take the primary database with it.
+
+Prepare it once per environment:
 
 ```
-REDIS_URL=redis://localhost:6379
+bundle exec ruby bin/prepare-cache          # development
+RAILS_ENV=test bundle exec ruby bin/prepare-cache   # test
 ```
 
-or run one with Docker:
-
-```
-docker run -d -p 6379:6379 --name omnisearch-redis redis:7-alpine
-```
+If the cache is unavailable the app **runs uncached rather than failing**. A
+cache outage logs one warning per process and degrades performance, never
+availability — the reasoning is in `app/services/search_cache.rb`.
 
 ### Testing
 
@@ -184,27 +196,29 @@ docker run -d -p 6379:6379 --name omnisearch-redis redis:7-alpine
 bundle exec rspec
 ```
 
-The suite needs nothing running: no database, no Redis, no network. WebMock is
-enabled suite-wide with `disable_net_connect!`, so a test that forgets to stub an
-HTTP call fails loudly instead of quietly depending on Google, Bing, or any
-other third party.
+The suite needs no external service: no network, no database server, no Redis.
+WebMock is enabled suite-wide with `disable_net_connect!`, so a test that forgets
+to stub an HTTP call fails loudly instead of quietly depending on Google, Bing,
+or any other third party.
+
+Seven examples exercise the **real** Solid Cache stack against a SQLite file, so
+they assert on the actual schema rather than a mock. They **skip themselves** if
+the test cache database has not been prepared, which keeps a fresh clone green:
+
+```
+RAILS_ENV=test bundle exec ruby bin/prepare-cache
+bundle exec rspec
+```
 
 Line coverage is **99.8%**. The `coverage/` report is generated locally and
 gitignored.
-
-Three of the examples need a real Redis and **skip themselves** when none is
-reachable, so the suite is green either way. To run them:
-
-```
-docker run -d -p 6379:6379 --name omnisearch-redis redis:7-alpine
-bundle exec rspec
-```
 
 ## Docker
 
 ### With docker compose
 
-Runs the API and a Redis together:
+One service. The cache database is created on first boot and kept in a named
+volume:
 
 ```
 cp .env.sample .env    # add your provider keys
@@ -216,6 +230,9 @@ docker compose up
 ```
 docker build . -t omnisearch-rails
 ```
+
+The image runs `bin/prepare-cache` before starting the server, so the cache
+schema is in place on first boot.
 
 Then a simple way to run a container with it could be:
 
@@ -235,8 +252,9 @@ The server should be available at ```localhost:3000``` just as if you would be r
 - Rails 8.1
 - Ruby 4.0
 - HTTParty
-- Redis (optional cache, degrades gracefully)
-- RSpec, SimpleCov, WebMock, mock-redis
+- Solid Cache (cache in the app's own database, degrades gracefully)
+- SQLite
+- RSpec, SimpleCov, WebMock
 - Docker
 
 ## Author

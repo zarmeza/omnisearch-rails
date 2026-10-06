@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'rails_helper'
+require 'active_support/testing/time_helpers'
 
 # Shared fixtures and helpers for stubbing the external search providers.
 #
@@ -39,10 +39,13 @@ module SearchResponseHelpers
                               .and_return(http_response(code: 200, body: body))
   end
 
-  # Prevent any real outbound request from escaping the suite. A test that
-  # forgets to stub gets a clear error naming WebMock, not a timeout.
-  def block_network!
-    WebMock.disable_net_connect!(allow_localhost: true)
+  # A cache store that fails on every operation, standing in for an unavailable
+  # Solid Cache database. Used to prove a cache outage is never a 500.
+  def broken_cache_store
+    Class.new do
+      def read(*) = raise(ActiveRecord::StatementInvalid, 'cache unavailable')
+      def write(*, **) = raise(ActiveRecord::StatementInvalid, 'cache unavailable')
+    end.new
   end
 end
 
