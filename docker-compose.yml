@@ -1,0 +1,38 @@
+# Two services: the API, and a Redis for the optional response cache.
+#
+# Redis is a separate service so it can be omitted entirely. The app probes it
+# at boot and runs uncached if it is not there — see README "Caching".
+#
+# Start the app with cache:  docker compose up
+# Start the app alone:       docker compose up web
+#
+# Put your API keys in .env first; compose reads it automatically.
+
+services:
+  web:
+    build: .
+    ports:
+      - '3000:3000'
+    # `.env` is gitignored and may not exist yet, so it is marked optional
+    # rather than required. Without it the app still boots — it just has no
+    # provider credentials and runs uncached.
+    env_file:
+      - path: .env
+        required: false
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    # Cached search responses are disposable, so persistence buys nothing here.
+    command: redis-server --save '' --appendonly no
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped

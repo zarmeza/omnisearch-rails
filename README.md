@@ -141,33 +141,77 @@ containerized version.
 git clone https://github.com/zarmeza/omnisearch-rails
 cd 'omnisearch-rails'
 bundle install
-```
-
-In order for the google search to work, you'd need to setup the environment variables GOOGLE_ENGINE_ID and GOOGLE_API_KEY with valid credentials.
-
-For bing search you'd need to provide a bing subscription key using the environment variable BING_SUBSCRIPTION_KEY
-
-You'd also need a redis instance running, the rails app will try to connect by default to ```localhost:6379```, you can also provide a custon redis url setting the environment variable REDIS_URL before running the rails server.
-
-Environment variables are set in a .env file (you can use the .env.sample as a template to create your own).
-
-You could then run the server like this:
-
-```
+cp .env.sample .env      # then fill in whichever providers you have keys for
 bundle exec rails s
 ```
 
-## Testing
+That is the whole setup. **No database and no Redis are required** to run the app
+or the test suite — see [Caching](#caching-optional) below.
 
-To run the test suite simply run rspec
+### Environment variables
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `GOOGLE_ENGINE_ID` | for Google | Custom Search engine id |
+| `GOOGLE_API_KEY` | for Google | Custom Search API key |
+| `BING_SUBSCRIPTION_KEY` | reserved | Not yet used; the Bing integration scrapes `bing.com` and needs no key |
+| `REDIS_URL` | no | Cache location. Defaults to `localhost:6379` |
+
+Both search providers are optional. A search runs against whichever are
+configured, and the response reports the status of each provider individually.
+
+### Caching (optional)
+
+Provider responses are cached for 15 minutes to stay inside API quotas. If no
+Redis is reachable the app **runs uncached rather than failing** — a cache
+outage logs a warning and degrades performance, never availability.
+
+To enable caching, point `REDIS_URL` at any Redis:
+
+```
+REDIS_URL=redis://localhost:6379
+```
+
+or run one with Docker:
+
+```
+docker run -d -p 6379:6379 --name omnisearch-redis redis:7-alpine
+```
+
+### Testing
 
 ```
 bundle exec rspec
 ```
 
-## Docker image
+The suite needs nothing running: no database, no Redis, no network. WebMock is
+enabled suite-wide with `disable_net_connect!`, so a test that forgets to stub an
+HTTP call fails loudly instead of quietly depending on Google, Bing, or any
+other third party.
 
-You can build a docker image of the project by simply running:
+Line coverage is **99.8%**. The `coverage/` report is generated locally and
+gitignored.
+
+Three of the examples need a real Redis and **skip themselves** when none is
+reachable, so the suite is green either way. To run them:
+
+```
+docker run -d -p 6379:6379 --name omnisearch-redis redis:7-alpine
+bundle exec rspec
+```
+
+## Docker
+
+### With docker compose
+
+Runs the API and a Redis together:
+
+```
+cp .env.sample .env    # add your provider keys
+docker compose up
+```
+
+### Building the image directly
 
 ```
 docker build . -t omnisearch-rails
@@ -188,10 +232,10 @@ The server should be available at ```localhost:3000``` just as if you would be r
 
 ## Technologies used
 
-- Rails
+- Rails 7.2
 - HTTParty
-- Redis
-- Rspec (+ mock-redis)
+- Redis (optional cache, degrades gracefully)
+- RSpec, SimpleCov, WebMock, mock-redis
 - Docker
 
 ## Author
