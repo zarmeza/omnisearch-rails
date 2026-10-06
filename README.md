@@ -232,7 +232,8 @@ The server should be available at ```localhost:3000``` just as if you would be r
 
 ## Technologies used
 
-- Rails 7.2
+- Rails 8.1
+- Ruby 4.0
 - HTTParty
 - Redis (optional cache, degrades gracefully)
 - RSpec, SimpleCov, WebMock, mock-redis
