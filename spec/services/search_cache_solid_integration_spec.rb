@@ -66,6 +66,21 @@ describe 'caching against a real store', :requires_solid_cache do
     expect(Rails.cache).to be_a(SolidCache::Store)
   end
 
+  it 'passes the retention cap from config/cache.yml through to the store' do
+    # Our wiring, not the gem's behaviour: max_age and max_size are set in
+    # config/cache.yml, and if that file were ignored or misspelled they would
+    # silently fall back to Solid Cache's defaults (2 weeks / no size cap)
+    # without anything failing. Pruning itself is the gem's business.
+    options = SolidCache.configuration.store_options
+
+    expect(options[:max_age]).to eq(7.days.to_i)
+    expect(options[:max_size]).to eq(256.megabytes)
+  end
+
+  it 'namespaces entries per environment, so dev and test cannot collide' do
+    expect(SolidCache.configuration.store_options[:namespace]).to eq(Rails.env)
+  end
+
   it 'stores the response body in the cache database' do
     service.call
 
