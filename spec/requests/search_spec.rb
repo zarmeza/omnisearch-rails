@@ -3,7 +3,10 @@ require 'rails_helper'
 RSpec.describe 'Search', type: :request do
   describe "GET /search" do
     context 'with invalid search parameters' do
-      before(:all) do
+      # `before`, not `before(:all)`: rails_helper stubs Redis.new with a
+      # MockRedis in a before(:each), so under before(:all) that stub does not
+      # exist yet and the request hits a real Redis connection.
+      before do
         get search_path
         @json_response = JSON.parse(response.body, symbolize_names: true)
       end
@@ -18,7 +21,7 @@ RSpec.describe 'Search', type: :request do
     end
 
     context 'with valid search parameters' do
-      before :all do
+      before do
         get search_path(engine: 'both', text: 'test')
         @json_response = JSON.parse(response.body, symbolize_names: true)
       end
