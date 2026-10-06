@@ -61,6 +61,14 @@ describe SearchService do
         expect(result[:data]).to eq('ok' => true)
       end
 
+      it 'reports no error messages on success' do
+        # The public contract is `error_messages` is always an array, so a client
+        # can iterate without checking for nil. This is the case that was never
+        # asserted: `Array(nil)` turning into [] is the whole reason for the
+        # normalization in SearchService#call.
+        expect(service.call[:error_messages]).to eq([])
+      end
+
       it 'caches the request response' do
         expect(Rails.cache).to receive(:write)
           .with(ENGINE_URL, body, expires_in: SearchCache::TTL)
@@ -90,7 +98,7 @@ describe SearchService do
         result = service.call
 
         expect(result[:status]).to eq(:error)
-        expect(result[:error_message]).to eq('Internal Server Error')
+        expect(result[:error_messages]).to eq(['Internal Server Error'])
       end
     end
 
@@ -101,7 +109,7 @@ describe SearchService do
         result = service.call
 
         expect(result[:status]).to eq(:error)
-        expect(result[:error_message]).to eq('boom')
+        expect(result[:error_messages]).to eq(['boom'])
       end
     end
 

@@ -43,12 +43,19 @@ class Search
     responses.any? { |response| response[:status] == :ok } ? :ok : :service_unavailable
   end
 
+  # One entry per provider, forwarded into the API response.
+  #
+  # `error_messages` is normalized to an array here so the JSON shape does not
+  # depend on which provider ran or whether it happened to fail: a caller can
+  # always iterate. `Array(nil)` gives `[]`, and `Array()` on a string gives
+  # `["..."]` — which is why the service emits a real array and this is a cheap
+  # second line of defence rather than the primary guarantee.
   def self.status_by_provider(responses)
     responses.map do |response|
       {
         provider: response[:provider],
         status: response[:status],
-        error_messages: response[:error_messages]
+        error_messages: Array(response[:error_messages])
       }
     end
   end
