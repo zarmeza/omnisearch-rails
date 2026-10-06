@@ -30,7 +30,7 @@ gem 'solid_cache', '~> 1.0'
 
 group :development, :test do
   # Call 'byebug' anywhere in the code to stop execution and get a debugger console
-  gem 'byebug', platforms: [:mri, :mingw, :x64_mingw]
+  gem 'byebug', platforms: [:mri, :windows]
   gem 'rspec-rails', '~> 8.0'
   gem 'dotenv-rails'
 end
@@ -44,8 +44,10 @@ group :test do
   gem 'webmock'
 end
 
-# Windows does not include zoneinfo files, so bundle the tzinfo-data gem
-gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw, :jruby]
+# Windows and JRuby do not ship zoneinfo files, so bundle the data gem there.
+# `:windows` replaces the old :mingw/:mswin/:x64_mingw aliases, which Bundler
+# deprecated.
+gem 'tzinfo-data', platforms: [:windows, :jruby]
 
 # Ruby 4.0 moved these out of the default gem set, so Rails' own requires no
 # longer find them. base64, mutex_m and drb were already declared here for the
