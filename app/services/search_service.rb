@@ -1,14 +1,12 @@
 # app/services/search_service.rb
 
 class SearchService
-  REDIS_TTL = 900
-
   def initialize(url, options = {})
     redis_url = Rails.application.config_for(:redis)['url']
 
     @url = url
     @uri = URI(url)
-    @store = redis_url ? Redis.new(url: redis_url) : Redis.new
+    @store = SearchCache.build(url: redis_url)
     @options = options
   end
 
@@ -39,9 +37,8 @@ class SearchService
   end
 
   def perform_request
-    if (cached = @store.get(@url))
-      return { status: :ok, data: self.class.parse_response(cached) }
-    end
+    cached = safe_cache_get
+    return { status: :ok, data: self.class.parse_response(cached) } if cached
 
     begin
       response = HTTParty.get(@url, headers: @options[:headers])
@@ -49,8 +46,7 @@ class SearchService
       case response.code
       when 200
         parsed_response = self.class.parse_response(response.body)
-        @store.set(@url, response.body)
-        @store.expire(@url, REDIS_TTL)
+        @store.set(@url, response.body, SearchCache::TTL)
         { status: :ok, data: parsed_response }
       else
         { status: :error, error_message: response.message }
@@ -58,5 +54,19 @@ class SearchService
     rescue HTTParty::Error => e
       { status: :error, error_message: e.message }
     end
+  end
+
+  private
+
+  # A cache read that cannot fail the request.
+  #
+  # SearchCache swallows Redis errors, so this is belt-and-braces for any store
+  # that does not: the cost of an uncached search is one upstream request, while
+  # the cost of raising here is a 500 for the caller. Never cache the miss.
+  def safe_cache_get
+    @store.get(@url)
+  rescue StandardError => e
+    Rails.logger.warn("[SearchService] cache read failed (#{e.class}), continuing uncached: #{e.message}")
+    nil
   end
 end
