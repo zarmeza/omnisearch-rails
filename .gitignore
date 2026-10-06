@@ -27,3 +27,12 @@ dump.rdb
 
 # dotenv
 .env
+
+# SimpleCov output. Generated on every run; the baseline lives in the README.
+/coverage
+
+# Bundler binstubs are machine-local.
+/bin/*
+!/bin/rails
+!/bin/rake
+!/bin/setup

@@ -28,7 +28,10 @@ describe Search, type: :model do
   end
 
   describe '#results' do
-    before(:all) do
+    # `before`, not `before(:all)`: rails_helper stubs Redis.new with a
+    # MockRedis in a before(:each), so under before(:all) that stub does not
+    # exist yet and the real client tries to connect to 127.0.0.1:6379.
+    before do
       @results = Search.new(engine: 'both', text: 'test').results
     end
 
