@@ -9,7 +9,6 @@ require 'rails_helper'
 ENGINE_URL = 'https://search.example.test/query'
 
 describe SearchService do
-  let(:store) { SearchCache::RedisStore.new }
   let(:body) { '{"ok":true}' }
 
   describe '::map_data' do
@@ -46,7 +45,7 @@ describe SearchService do
     before { allow(HTTParty).to receive(:get).and_return(http_response(code: 200, body: body)) }
 
     context 'when there is no cached response' do
-      before { allow(service.instance_variable_get(:@store)).to receive(:get).and_return(nil) }
+      before { allow(Rails.cache).to receive(:read).and_return(nil) }
 
       it 'performs an http get request' do
         expect(HTTParty).to receive(:get)
@@ -63,17 +62,15 @@ describe SearchService do
       end
 
       it 'caches the request response' do
-        cache = service.instance_variable_get(:@store)
-        expect(cache).to receive(:set).with(ENGINE_URL, body, SearchCache::TTL)
+        expect(Rails.cache).to receive(:write)
+          .with(ENGINE_URL, body, expires_in: SearchCache::TTL)
 
         service.call
       end
     end
 
     context 'when there is a cached response' do
-      before do
-        allow(service.instance_variable_get(:@store)).to receive(:get).and_return(body)
-      end
+      before { allow(Rails.cache).to receive(:read).and_return(body) }
 
       it 'does not perform an http get request' do
         expect(HTTParty).not_to receive(:get)
@@ -110,8 +107,7 @@ describe SearchService do
 
     context 'when the cache raises mid-request' do
       before do
-        allow(service.instance_variable_get(:@store)).to receive(:get)
-          .and_raise(Redis::CannotConnectError, 'gone')
+        allow(Rails.cache).to receive(:read).and_raise(ActiveRecord::StatementInvalid, 'cache gone')
       end
 
       it 'still performs the request rather than 500-ing' do

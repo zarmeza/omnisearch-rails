@@ -41,13 +41,11 @@ RSpec.describe 'Search', type: :request do
       end
     end
 
-    context 'when no cache is reachable' do
-      # The regression this pins: Redis used to be a hard dependency, so a
-      # fresh clone with no redis-server got a 500 instead of a search result.
+    context 'when the cache store is unavailable' do
+      # The regression this pins: a cache that cannot be reached used to be a
+      # hard dependency, so the search returned a 500 instead of a result.
       before do
-        client = instance_double(Redis)
-        allow(client).to receive(:ping).and_raise(Redis::CannotConnectError, 'refused')
-        allow(Redis).to receive(:new).and_return(client)
+        allow(SearchCache).to receive(:new).and_return(SearchCache.new(broken_cache_store))
         stub_provider(/customsearch/, body: SearchResponseHelpers::GOOGLE_OK.to_json)
         get search_path(engine: 'google', text: 'test')
         @json_response = JSON.parse(response.body, symbolize_names: true)

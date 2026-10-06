@@ -1,25 +1,41 @@
-# SQLite version 3.x
-#   gem install sqlite3
+# Multi-database layout: `primary` for the app, `cache` for Solid Cache.
 #
-#   Ensure the SQLite 3 gem is defined in your Gemfile
-#   gem 'sqlite3'
+# The cache gets its own file so it stays disposable — `rm db/cache*.sqlite3`
+# costs one cold search, not a migration, and a corrupt or oversized cache can
+# never take the primary database with it.
 #
+# config.solid_cache.connects_to in config/application.rb points at :cache.
+#
+# Nothing in the app writes to `primary`; it exists because Rails expects a
+# primary to be configured. Moving to Postgres later is a change here.
 default: &default
   adapter: sqlite3
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
   timeout: 5000
 
 development:
-  <<: *default
-  database: db/development.sqlite3
+  primary:
+    <<: *default
+    database: db/development.sqlite3
+  cache:
+    <<: *default
+    database: db/cache_development.sqlite3
 
-# Warning: The database defined as "test" will be erased and
-# re-generated from your development database when you run "rake".
-# Do not set this db to the same as development or production.
+# Warning: The database defined as "test" will be erased and re-generated from
+# your development database when you run "rake". Do not set this db to the same
+# as development or production.
 test:
-  <<: *default
-  database: db/test.sqlite3
+  primary:
+    <<: *default
+    database: db/test.sqlite3
+  cache:
+    <<: *default
+    database: db/cache_test.sqlite3
 
 production:
-  <<: *default
-  database: db/production.sqlite3
+  primary:
+    <<: *default
+    database: db/production.sqlite3
+  cache:
+    <<: *default
+    database: db/cache_production.sqlite3

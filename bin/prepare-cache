@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Load the Solid Cache schema into the cache database for the current environment.
+#
+# Kept as a script rather than a migration because the cache is disposable: there
+# is no history to preserve, only a table to ensure. Running it twice is safe.
+
+require_relative '../config/environment'
+
+env = Rails.env
+abort "refusing to touch the cache database in production" if env.production?
+
+ActiveRecord::Base.establish_connection(:cache)
+ActiveRecord::Schema.verbose = false
+load Rails.root.join('db/cache_schema.rb')
+
+puts "Cache schema ready for #{env} (#{ActiveRecord::Base.connection_db_config.database})"

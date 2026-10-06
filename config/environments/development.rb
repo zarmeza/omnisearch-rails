@@ -17,15 +17,13 @@ Rails.application.configure do
   # Enable server timing.
   config.server_timing = true
 
-  # Enable/disable caching. By default caching is disabled.
-  # Run rails dev:cache to toggle caching.
-  if Rails.root.join("tmp/caching-dev.txt").exist?
-    config.cache_store = :memory_store
-    config.public_file_server.headers = { "Cache-Control" => "public, max-age=#{2.days.to_i}" }
-  else
-    config.action_controller.perform_caching = false
+  # The response cache store is set in config/application.rb (:solid_cache_store).
+  # Here we only toggle the framework-level switch, so `rails dev:cache` works as
+  # usual. The search cache in SearchCache is independent of this flag.
+  config.action_controller.perform_caching = Rails.root.join("tmp/caching-dev.txt").exist?
 
-    config.cache_store = :null_store
+  if config.action_controller.perform_caching
+    config.public_file_server.headers = { "Cache-Control" => "public, max-age=#{2.days.to_i}" }
   end
 
   # Don't care if the mailer can't send.

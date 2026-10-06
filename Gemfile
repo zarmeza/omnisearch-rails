@@ -14,8 +14,6 @@ gem 'rails', '~> 8.1.0'
 gem 'puma', '~> 6.6'
 # Build JSON APIs with ease. Read more: https://github.com/rails/jbuilder
 # gem 'jbuilder', '~> 2.5'
-# Use Redis adapter to run Action Cable in production
-# gem 'redis', '~> 4.0'
 # Use ActiveModel has_secure_password
 # gem 'bcrypt', '~> 3.1.7'
 
@@ -26,8 +24,9 @@ gem 'puma', '~> 6.6'
 # gem 'rack-cors'
 
 gem 'httparty', '~> 0.24'
+gem 'sqlite3', '~> 2.7'
 
-gem 'redis', '~> 5.4'
+gem 'solid_cache', '~> 1.0'
 
 group :development, :test do
   # Call 'byebug' anywhere in the code to stop execution and get a debugger console
@@ -43,7 +42,6 @@ end
 group :test do
   gem 'simplecov', require: false
   gem 'webmock'
-  gem 'mock_redis'
 end
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
