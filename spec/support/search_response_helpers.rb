@@ -33,10 +33,11 @@ module SearchResponseHelpers
     double('HTTParty::Response', code: code, body: body, message: message)
   end
 
-  # Stub a provider's HTTP call with a canned 200.
-  def stub_provider(url_matcher, body:)
+  # Stub a provider's HTTP call with a canned response. Defaults to 200; pass
+  # `code:`/`message:` to simulate a provider-side failure.
+  def stub_provider(url_matcher, body: '', code: 200, message: 'OK')
     allow(HTTParty).to receive(:get).with(url_matcher, any_args)
-                              .and_return(http_response(code: 200, body: body))
+                              .and_return(http_response(code: code, body: body, message: message))
   end
 
   # A cache store that fails on every operation, standing in for an unavailable
