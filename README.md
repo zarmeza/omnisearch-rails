@@ -15,12 +15,12 @@ A simple rails api application that provides search results from google and/or b
 
 **Sample request**
 
-```http://localhost:3000/search?engine=both&text=elshaka```
+```http://localhost:3000/search?engine=both&text=zarmeza```
 
 **Response**
 ```json
 {
-  "query": "elshaka",
+  "query": "zarmeza",
   "status": "ok",
   "status_by_provider": [
     {
@@ -37,8 +37,8 @@ A simple rails api application that provides search results from google and/or b
   "results": [
     {
       "provider": "google",
-      "title": "elshaka (Eleazar Meza) · GitHub",
-      "link": "https://github.com/elshaka"
+      "title": "zarmeza (Eleazar Meza) · GitHub",
+      "link": "https://github.com/zarmeza"
     },
     {
       "provider": "bing",
@@ -131,12 +131,14 @@ A simple rails api application that provides search results from google and/or b
 
 ## Live version
 
-[omnisearch-api @ Heroku](https://omnisearch-elshaka.herokuapp.com/search?engine=google&text=test%20query)
+No longer deployed — the original Heroku app is down and the free tier it used is gone.
+Run it locally with `bundle install && rails server`; see the Docker section below for the
+containerized version.
 
 ## Installation and getting started
 
 ```
-git clone https://github.com/elshaka/omnisearch-rails
+git clone https://github.com/zarmeza/omnisearch-rails
 cd 'omnisearch-rails'
 bundle install
 ```
@@ -196,6 +198,6 @@ The server should be available at ```localhost:3000``` just as if you would be r
 
 👤 **Eleazar Meza**
 
-- Github: [@elshaka](https://github.com/elshaka)
-- Twitter: [@elshaka](https://twitter.com/elshaka)
-- Linkedin: [Eleazar Meza](https://www.linkedin.com/in/elshaka/)
+- Github: [@zarmeza](https://github.com/zarmeza)
+- Twitter: [@zarmeza](https://twitter.com/zarmeza)
+- Linkedin: [Eleazar Meza](https://www.linkedin.com/in/zarmeza/)
