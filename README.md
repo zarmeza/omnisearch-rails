@@ -1,5 +1,16 @@
 # omnisearch-rails
 
+> **Archived.** This repository is no longer maintained. Its functionality lives
+> on as a mountable Rails engine in **[zarmeza/omnisearch](https://github.com/zarmeza/omnisearch)**.
+>
+> The engine keeps the same `/search?engine=...&text=...` contract and the same
+> provider set (Google and Bing), but instead of being an application you run it
+> is a gem you mount into a Rails app you already have. See the [migration
+> notes](https://github.com/zarmeza/omnisearch#migrating-from-omnisearch-rails)
+> for the differences.
+>
+> This repository is kept for reference only.
+
 A simple rails api application that provides search results from google and/or bing
 
 ## API endpoints
